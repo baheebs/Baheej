@@ -64,11 +64,25 @@
     })
     .then(data => {
       thisForm.querySelector('.loading').classList.remove('d-block');
-      if (data.trim() == 'OK') {
-        thisForm.querySelector('.sent-message').classList.add('d-block');
-        thisForm.reset(); 
-      } else {
-        throw new Error(data ? data : 'Form submission failed and no error message returned from: ' + action); 
+      
+      // Try to parse as JSON (for Web3Forms API)
+      try {
+        const jsonData = JSON.parse(data);
+        if (jsonData.success === true) {
+          thisForm.querySelector('.sent-message').classList.add('d-block');
+          thisForm.reset();
+          return;
+        } else {
+          throw new Error(jsonData.message || 'Form submission failed');
+        }
+      } catch (e) {
+        // If not JSON or parsing failed, check for "OK" (original behavior)
+        if (data.trim() == 'OK') {
+          thisForm.querySelector('.sent-message').classList.add('d-block');
+          thisForm.reset();
+        } else {
+          throw new Error(data ? data : 'Form submission failed and no error message returned from: ' + action);
+        }
       }
     })
     .catch((error) => {
@@ -78,7 +92,9 @@
 
   function displayError(thisForm, error) {
     thisForm.querySelector('.loading').classList.remove('d-block');
-    thisForm.querySelector('.error-message').innerHTML = error;
+    // Extract error message from Error object or use the error string directly
+    const errorMessage = error instanceof Error ? error.message : error;
+    thisForm.querySelector('.error-message').innerHTML = errorMessage;
     thisForm.querySelector('.error-message').classList.add('d-block');
   }
 
